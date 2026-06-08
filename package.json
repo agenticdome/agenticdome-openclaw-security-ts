@@ -44,12 +44,12 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com//agenticdome-openclaw-security-ts#readme",
+  "homepage": "https://github.com/agenticdome/agenticdome-openclaw-security-ts#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com//agenticdome-openclaw-security-ts.git"
+    "url": "git+https://github.com/agenticdome/agenticdome-openclaw-security-ts.git"
   },
   "bugs": {
-    "url": "https://github.com//agenticdome-openclaw-security-ts/issues"
+    "url": "https://github.com/agenticdome/agenticdome-openclaw-security-ts/issues"
   }
 }
