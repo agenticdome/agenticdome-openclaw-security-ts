@@ -102,32 +102,45 @@ export AGENTICDOME_BLOCK_ON_SENSITIVE_OUTPUT="false"
 
 ---
 
-## OpenClaw Native Integration
+## Native OpenClaw Plugin Registration
 
-Register the default export plugin directly in your global OpenClaw runtime configuration. The plugin automatically binds to the OpenClaw execution lifecycle.
+OpenClaw handles plugin installation, activation, and hot-reloading through its secure command-line interface.
 
-### 1. Global Plugin Registration
+Do **not** modify `~/.openclaw/openclaw.json` manually. Missing schemas, invalid plugin metadata, or malformed JSON5 syntax can cause Gateway validation to fail at boot.
 
-Open your central `openclaw.config.ts` file and register the plugin:
+Run the following commands in your terminal to safely register and activate the AgenticDome containment layer:
 
-```ts
-import { defineConfig } from 'openclaw/config';
-import AgenticDomePlugin from 'agenticdome-openclaw-security';
+```bash
+# 1. Register the plugin into the OpenClaw workspace
+openclaw plugins install npm:agenticdome-openclaw-security
 
-export default defineConfig({
-  gateway: {
-    port: 18789,
-    host: '0.0.0.0'
-  },
+# 2. Enable the plugin inside your active profile
+openclaw plugins enable agenticdome-security
 
-  agents: ['./src/agents/**/*.ts'],
-  skills: ['./src/skills/**/*.ts'],
+# 3. Restart the local Gateway daemon to apply the secure firewall hooks
+openclaw gateway restart
+```
 
-  // Mount AgenticDome globally across the execution lifecycle.
-  plugins: [
-    AgenticDomePlugin
-  ]
-});
+### Verification
+
+To confirm that the AgenticDome zero-trust hooks are active across your OpenClaw execution lifecycle, run:
+
+```bash
+openclaw plugins inspect agenticdome-security --runtime
+```
+
+You should see the plugin registered with the ID:
+
+```text
+agenticdome-security
+```
+
+and lifecycle hooks attached for:
+
+```text
+before_agent_run
+before_tool_call
+tool_result_persist
 ```
 
 ---
