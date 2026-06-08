@@ -1,0 +1,55 @@
+{
+  "name": "agenticdome-openclaw-security",
+  "version": "0.1.1",
+  "description": "AgenticDome security firewall plugin for OpenClaw",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./firewall": {
+      "types": "./dist/firewall.d.ts",
+      "import": "./dist/firewall.mjs",
+      "require": "./dist/firewall.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "build": "tsup",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run build"
+  },
+  "dependencies": {
+    "agenticdome-sdk": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com//agenticdome-openclaw-security-ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com//agenticdome-openclaw-security-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com//agenticdome-openclaw-security-ts/issues"
+  }
+}
