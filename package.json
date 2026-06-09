@@ -1,6 +1,6 @@
 {
   "name": "agenticdome-openclaw-security",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "AgenticDome security firewall plugin for OpenClaw",
   "license": "MIT",
   "type": "module",
