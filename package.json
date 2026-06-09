@@ -31,7 +31,7 @@
     "prepublishOnly": "npm run clean && npm run typecheck && npm run build"
   },
   "dependencies": {
-    "agenticdome-sdk": "^0.4.0"
+    "agenticdome-sdk": "^0.5.2"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
