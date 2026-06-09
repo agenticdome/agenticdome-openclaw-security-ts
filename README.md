@@ -44,24 +44,6 @@ If you are an **Enterprise Administrator** looking to secure your OpenClaw stack
 
 ---
 
-## Installation
-
-Install the security containment layer in your OpenClaw project:
-
-```bash
-npm install agenticdome-openclaw-security
-```
-
-This package uses the published AgenticDome SDK:
-
-```bash
-agenticdome-sdk
-```
-
-The SDK dependency is installed automatically.
-
----
-
 ## Configuration
 
 Configure your local OpenClaw runtime, server, or hosting container with credentials from the AgenticDome console.
