@@ -10,3 +10,4 @@ yarn-error.log*
 pnpm-debug.log*
 .harness_runtime_ts/
 *.tgz
+.nvm/

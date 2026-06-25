@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "esbuild": "^0.28.1",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2"
   },
@@ -66,5 +67,8 @@
     "extensions": [
       "./dist/index.mjs"
     ]
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
