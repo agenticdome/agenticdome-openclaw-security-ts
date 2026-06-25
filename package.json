@@ -1,6 +1,6 @@
 {
   "name": "agenticdome-openclaw-security",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "AgenticDome zero-trust security firewall plugin for OpenClaw",
   "license": "MIT",
   "type": "module",
