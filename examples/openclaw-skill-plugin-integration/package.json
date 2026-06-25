@@ -1,0 +1,16 @@
+{
+  "name": "openclaw-agenticdome-skill-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Copyable OpenClaw skill integration example for agenticdome-openclaw-security.",
+  "scripts": {
+    "start": "node src/customer-risk-skill.mjs"
+  },
+  "dependencies": {
+    "agenticdome-openclaw-security": "^0.1.7"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

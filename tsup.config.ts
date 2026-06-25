@@ -8,11 +8,11 @@ export default defineConfig({
   outDir: 'dist',
   format: ['esm', 'cjs'],
   dts: true,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
   splitting: false,
   minify: false,
-  target: 'node18',
+  target: 'node22',
   outExtension({ format }) {
     return {
       js: format === 'esm' ? '.mjs' : '.cjs'

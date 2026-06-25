@@ -958,7 +958,7 @@ export class OpenClawFirewall {
       });
     }
 
-    const rawResult = await args.skillFunc(...[], skillArgs);
+    const rawResult = await args.skillFunc(skillArgs);
 
     const resultText = safeResultToText(rawResult, {
       maxChars: this.config.outputSerializationMaxChars

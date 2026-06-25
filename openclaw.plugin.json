@@ -1,0 +1,13 @@
+{
+  "id": "agenticdome-security",
+  "activation": {
+    "onStartup": true
+  },
+  "name": "AgenticDome Shield",
+  "description": "Zero-trust prompt, tool, delegation, and transcript persistence security for OpenClaw runtimes.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

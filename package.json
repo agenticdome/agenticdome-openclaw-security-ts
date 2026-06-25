@@ -1,7 +1,7 @@
 {
   "name": "agenticdome-openclaw-security",
   "version": "0.1.7",
-  "description": "AgenticDome security firewall plugin for OpenClaw",
+  "description": "AgenticDome zero-trust security firewall plugin for OpenClaw",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -22,13 +22,23 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "SECURITY.md",
+    "openclaw.plugin.json",
+    "skills",
+    "docs",
+    "examples"
   ],
   "scripts": {
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "build": "tsup",
-    "prepublishOnly": "npm run clean && npm run typecheck && npm run build"
+    "test": "npm run build && node --test test/*.test.mjs && node test/openclaw-cli-smoke.mjs",
+    "prepublishOnly": "npm run clean && npm run typecheck && npm test && npm run build",
+    "test:openclaw-real": "npm run build && node --test test/openclaw-real-compat.test.mjs",
+    "test:openclaw-cli": "npm run build && node test/openclaw-cli-smoke.mjs",
+    "test:live-tenant": "npm run build && AGENTICDOME_LIVE_TENANT_TEST=1 node --test test/live-tenant.test.mjs",
+    "test:release": "npm run typecheck && npm test && npm run test:live-tenant && npm pack --dry-run"
   },
   "dependencies": {
     "agenticdome-sdk": "^0.5.2"
@@ -39,7 +49,7 @@
     "typescript": "^5.7.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.19.0"
   },
   "publishConfig": {
     "access": "public"
@@ -51,5 +61,10 @@
   },
   "bugs": {
     "url": "https://github.com/agenticdome/agenticdome-openclaw-security-ts/issues"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.mjs"
+    ]
   }
 }
