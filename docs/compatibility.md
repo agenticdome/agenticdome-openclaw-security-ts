@@ -4,9 +4,9 @@ This matrix is the supported release target for `agenticdome-openclaw-security`.
 
 | AgenticDome OpenClaw SDK | Node.js | OpenClaw CLI | Compatibility status | Verification |
 | --- | --- | --- | --- | --- |
-| 0.1.7 | >=22.19.0 | 2026.6.10 | Supported | Real OpenClaw CLI smoke passed on 2026-06-24 |
-| 0.1.7 | >=22.19.0 | latest | Supported when `latest` resolves to a CLI compatible with the hooks below | Admin SDK harness resolves `openclaw@latest`, caches the resolved version, and verifies runtime load |
-| 0.1.7 | <22.19.0 | any | Unsupported | OpenClaw runtime requirement is not met |
+| 0.1.8 | >=22.19.0 | 2026.6.10 | Supported | Real OpenClaw CLI smoke passed on 2026-06-24 |
+| 0.1.8 | >=22.19.0 | latest | Supported when `latest` resolves to a CLI compatible with the hooks below | Admin SDK harness resolves `openclaw@latest`, caches the resolved version, and verifies runtime load |
+| 0.1.8 | <22.19.0 | any | Unsupported | OpenClaw runtime requirement is not met |
 
 ## Required OpenClaw Contracts
 

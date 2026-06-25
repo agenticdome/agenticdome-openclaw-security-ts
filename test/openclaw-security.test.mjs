@@ -146,6 +146,10 @@ test('plugin handlers handle malformed events through block responses', async ()
 
 test('local transcript redaction preserves OpenClaw message shape', () => {
   assert.equal(redactLocalText('email person@example.test'), 'email [EMAIL_REDACTED]');
+  assert.equal(
+    redactLocalText('call 123-555-0199 or 123.555.0199'),
+    'call [PHONE_REDACTED] or [PHONE_REDACTED]'
+  );
 
   const original = {
     role: 'toolResult',

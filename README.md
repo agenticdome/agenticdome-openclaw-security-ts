@@ -5,7 +5,7 @@
 
 > **Zero-Trust Security Middleware for Multi-Agent OpenClaw Architectures.**
 
-`agenticdome-openclaw-security` is an infrastructure-level firewall plugin that intercepts the OpenClaw execution lifecycle to provide real-time prompt injection shielding, cryptographically validated multi-agent delegation tokens, cloud-backed tool authorization, and transcript-safe outbound redaction.
+`agenticdome-openclaw-security` is an infrastructure-level firewall plugin that intercepts the OpenClaw execution lifecycle to provide real-time prompt injection shielding, cloud-verified multi-agent delegation tokens, cloud-backed tool authorization, and transcript-safe outbound redaction.
 
 ## Positioning and Coverage
 
@@ -33,7 +33,7 @@ The local OpenClaw runtime handles agent and skill execution. The centralized Ag
 ```text
 [ Local Enterprise Runtime Perimeter ]            [ Cloud Governance Plane ]
 ┌────────────────────────────────────┐            ┌────────────────────────┐
-│ • OpenClaw App Engine              │  HTTPS/RPC │ • au.agenticdome.io    │
+│ • OpenClaw App Engine              │  HTTPS/RPC │ • agenticdome.io       │
 │ • Custom & Marketplace Skills      │───────────>│ • Centralized Rules    │
 │ • AgenticDome Middleware Plugin    │<───────────│ • Threat Analytics     │
 └────────────────────────────────────┘  Verdict   └────────────────────────┘
@@ -53,7 +53,7 @@ The local OpenClaw runtime handles agent and skill execution. The centralized Ag
 
 If you are an **Enterprise Administrator** looking to secure your OpenClaw stack:
 
-1. **Create an account:** Visit the [AgenticDome Management Console, AU Region](https://au.agenticdome.io).
+1. **Create an account:** Visit the AgenticDome management console for your region, for example `https://www.agenticdome.io` or `https://au.agenticdome.io`.
 2. **Retrieve Tenant ID:** Log in and copy your unique workspace or organization identifier from your organization settings.
 3. **Generate API Key:** Navigate to the access-control or API-key section and generate a production API key.
 
@@ -62,8 +62,16 @@ If you are an **Enterprise Administrator** looking to secure your OpenClaw stack
 ## Runtime Requirements
 
 - Node.js `>=22.19.0`, aligned with current OpenClaw runtime requirements.
-- OpenClaw installed through the official CLI, or available through `npx openclaw@latest`.
+- OpenClaw installed through the CLI, or available through `npx openclaw@latest` in environments that use the npm-distributed CLI.
 - AgenticDome tenant credentials in environment variables before the protected hooks are exercised.
+
+Before installing the plugin on a developer workstation or CI runner, confirm the active runtime:
+
+```bash
+node -v
+```
+
+The version must be `v22.19.0` or newer. The package build and smoke tests can resolve `node@22` with `npx` for verification, but a normal local OpenClaw runtime should itself run on Node.js `>=22.19.0`.
 
 The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install and inspect the plugin before credentials are present; actual prompt, tool, and delegation enforcement still requires `AGENTICDOME_API_BASE`, `AGENTICDOME_API_KEY`, and `AGENTICDOME_TENANT_ID`.
 
@@ -71,7 +79,7 @@ The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install
 
 ## OpenClaw Compatibility
 
-The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). Current release target: Node `>=22.19.0` and OpenClaw CLI `2026.6.10` or the current `latest` when the real CLI smoke test passes.
+The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). Current release target: Node `>=22.19.0` and OpenClaw CLI `2026.6.10`, plus `openclaw@latest` when the real CLI smoke test passes in your release environment.
 
 This package is shaped as a native OpenClaw extension package:
 
@@ -113,7 +121,7 @@ export AGENTICDOME_FAIL_CLOSED="true"
 # Enforce explicit session IDs for audit logging and traceability.
 export AGENTICDOME_REQUIRE_SESSION_ID="true"
 
-# Redact emails, phone numbers, physical addresses, and other common PII.
+# Request cloud-backed redaction for emails, phone numbers, SSNs, and other tenant-configured PII.
 export AGENTICDOME_REDACT_PII="true"
 
 # Redact API keys, cloud tokens, access tokens, and other secrets.
@@ -129,7 +137,7 @@ export AGENTICDOME_BLOCK_ON_SENSITIVE_OUTPUT="false"
 
 OpenClaw handles plugin installation, activation, and hot-reloading through its secure command-line interface.
 
-Do **not** modify `~/.openclaw/openclaw.json` manually. Missing schemas, invalid plugin metadata, or malformed JSON5 syntax can cause Gateway validation to fail at boot.
+Prefer the OpenClaw CLI over manual edits to local OpenClaw configuration. Missing schemas, invalid plugin metadata, or malformed JSON/JSON5 syntax can cause runtime validation to fail at boot.
 
 Run the following commands in your terminal to safely register and activate the AgenticDome containment layer:
 
@@ -143,7 +151,7 @@ openclaw plugins enable agenticdome-security
 # 3. Permit the prompt-screening hook to read raw conversation content
 openclaw config set plugins.entries.agenticdome-security.hooks.allowConversationAccess true
 
-# 4. Restart the local Gateway daemon to apply the secure firewall hooks
+# 4. Restart OpenClaw or the local gateway process so the hook changes are loaded
 openclaw gateway restart
 ```
 
@@ -208,7 +216,7 @@ The plugin supports three execution paths:
    - `handoff_to_agent`
    - `transfer_to_agent`
 
-   AgenticDome authorizes the delegation and returns an ephemeral cryptographic decision token.
+   AgenticDome authorizes the delegation and returns a decision token. The plugin stores the token in memory with a TTL and verifies it with the cloud governance plane before specialist execution.
 
    The plugin injects the token into:
 
@@ -232,7 +240,6 @@ This helps reduce leakage of:
 - Cloud credentials
 - Emails
 - Phone numbers
-- Customer records
 - Sensitive business data
 - PII
 
@@ -250,9 +257,9 @@ Existing skills can continue to expose normal parameters.
 
 The middleware handles authorization, token injection, and output sanitization at the runtime boundary.
 
-### Cryptographic Delegation
+### Delegation Tokens
 
-When a manager agent delegates a task to a specialist agent, the middleware automatically injects an ephemeral `_decision_token` into nested downstream parameters.
+When a manager agent delegates a task to a specialist agent, the middleware automatically injects a short-lived `_decision_token` into nested downstream parameters.
 
 The specialist execution path verifies that token against the cloud governance plane before running the target function.
 
@@ -475,7 +482,7 @@ For a CLI package smoke only:
 npm run test:openclaw-cli
 ```
 
-The admin SDK harness TypeScript runtime also performs the real OpenClaw CLI install/inspect smoke before running case probes. It requires Node `>=22.19.0`, resolves a real Node 22 runtime even under web-runner environments, and records the selected Node command/version in the run JSON. The harness caches the resolved OpenClaw CLI under `.harness_runtime_ts/<fingerprint>/openclaw_cli` and only installs again when the cached CLI is missing or `openclaw@latest` resolves to a newer version. See [`docs/troubleshooting.md`](docs/troubleshooting.md).
+The internal admin SDK harness TypeScript runtime also performs the real OpenClaw CLI install/inspect smoke before running case probes. It requires Node `>=22.19.0`, resolves a Node 22 runtime under web-runner environments, and records the selected Node command/version in the run JSON. The harness caches the resolved OpenClaw CLI under `.harness_runtime_ts/<fingerprint>/openclaw_cli` and only installs again when the cached CLI is missing or `openclaw@latest` resolves to a newer version. See [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
 A copyable skill/plugin integration example is available at [`examples/openclaw-skill-plugin-integration`](examples/openclaw-skill-plugin-integration).
 
@@ -487,43 +494,9 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## Go-to-Market Messaging for the OpenClaw Community
+## Community Feedback
 
-### Short Positioning
-
-AgenticDome Shield is a native OpenClaw security plugin that adds zero-trust policy checks across prompts, tool calls, agent-to-agent delegation, and transcript persistence. It is designed for teams running OpenClaw in regulated, customer-facing, or high-risk automation environments where tool execution and multi-agent handoffs need centralized governance.
-
-### Community Post Draft
-
-Hi OpenClaw community,
-
-We have built `agenticdome-openclaw-security`, a native OpenClaw plugin that adds an AgenticDome policy layer to OpenClaw runtimes. The goal is to help teams safely run OpenClaw agents in production by enforcing prompt guardrails, tool authorization, delegated decision-token verification, and transcript-safe output redaction.
-
-The plugin integrates through OpenClaw's standard plugin lifecycle:
-
-```bash
-openclaw plugins install npm:agenticdome-openclaw-security
-openclaw plugins enable agenticdome-security
-openclaw config set plugins.entries.agenticdome-security.hooks.allowConversationAccess true
-```
-
-It registers these OpenClaw typed hooks:
-
-```text
-before_agent_run
-before_tool_call
-tool_result_persist
-```
-
-A few implementation details we cared about:
-
-- The package requires Node `>=22.19.0`, aligned with current OpenClaw.
-- It ships `openclaw.plugin.json` and `package.json` `openclaw.extensions` metadata.
-- It lazy-loads AgenticDome credentials so OpenClaw can install and inspect the plugin before tenant credentials are configured.
-- It respects OpenClaw's synchronous `tool_result_persist` contract by doing local transcript redaction there, while cloud-backed DLP remains available through the SDK's async `sanitizeOutput()` and `protectedExecute()` APIs.
-- It is tested through the real OpenClaw CLI by packing the SDK, installing it via `openclaw plugins install npm-pack:...`, enabling `allowConversationAccess`, and verifying OpenClaw reports `status: loaded` with all three hooks.
-
-We would value feedback from OpenClaw maintainers and plugin developers on packaging conventions, hook usage, and any improvements needed before wider release. Our intent is to contribute a security-focused plugin that fits OpenClaw's runtime model rather than bypassing it.
+This package is intended to fit OpenClaw's plugin model rather than bypass it. Feedback from OpenClaw maintainers, plugin developers, and security reviewers is welcome, especially around packaging conventions, hook usage, synchronous transcript persistence behavior, and safe defaults for high-risk tool execution.
 
 ### Integration Summary for Developers
 
@@ -545,4 +518,3 @@ const safeResult = await firewall.protectedExecute({
 ```
 
 Manager-to-specialist tools should preserve `_decision_token` and `_source_agent_id` fields until the specialist call reaches the plugin. Do not log those fields or return them in user-visible output.
-

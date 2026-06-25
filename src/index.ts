@@ -71,6 +71,7 @@ export function redactLocalText(text: string): string {
   return text
     .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, '[EMAIL_REDACTED]')
     .replace(/\b\d{3}-\d{2}-\d{4}\b/g, '[SSN_REDACTED]')
+    .replace(/\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b/g, '[PHONE_REDACTED]')
     .replace(/\b(?:sk|pk|rk)-[A-Za-z0-9_-]{12,}\b/g, '[SECRET_REDACTED]')
     .replace(/\bgh[opsu]_[A-Za-z0-9_]{20,}\b/g, '[SECRET_REDACTED]')
     .replace(/\b(?:api[_-]?key|token|password|secret)=\S+/gi, (match) => {
