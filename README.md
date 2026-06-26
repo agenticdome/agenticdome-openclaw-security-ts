@@ -93,6 +93,41 @@ OpenClaw's `tool_result_persist` hook is synchronous by design. This package the
 
 ---
 
+## Threat Mapping Matrix and CVE Mitigation Scope
+
+OpenClaw agents often operate with meaningful host, workspace, network, or tool privileges. In that execution model, a single successful exploit can become a full environment takeover if it can chain prompt injection, credential exposure, tool misuse, and sandbox escape. The matrix below defines where AgenticDome can break that chain and where controls must remain in OpenClaw Core, the host sandbox, identity infrastructure, or network layer.
+
+### Systemic Vulnerability Matrix
+
+| CVE ID | Vulnerability class | CVSS score | Impact / exploitation pattern | AgenticDome coverage strategy |
+| --- | --- | --- | --- | --- |
+| CVE-2026-44115 | Credential and environment-variable leaks | 8.8 High | Shell command expansions in unquoted heredocs can return API keys to the model output transcript. | **Mitigated via `tool_result_persist`.** Locally detects and redacts environment keys before output text is serialized into logs or transcripts. |
+| CVE-2026-44118 | MCP privilege escalation | 7.8 High | Unverified ownership flags allow ordinary tasks to masquerade as root or system operators. | **Mitigated via handoff verification.** `authorizeManagerHandoff()` enforces ephemeral `_decision_token` rules to block unauthorized lateral tool jumps. |
+| N/A | Indirect prompt injection | N/A | Adversarial text read from untrusted files hijacks the orchestration runtime loop. | **Mitigated via `before_agent_run`.** Screens incoming context payloads through tenant policy before system tasks trigger. |
+| CVE-2026-44112 | Sandbox filesystem escape | 9.6 Critical | A TOCTOU symlink race condition allows agents to write files outside the workspace root. | **Indirectly contained.** AgenticDome cannot patch OS-level race conditions, but it can block prompt-injection and unauthorized-tool patterns commonly used to trigger them. |
+| CVE-2026-53849 | Identity spoofing | 8.6 High | `allowFrom` access controls evaluate mutable Discord display names rather than unique user IDs. | **Out of scope.** Authentication flaws in external webhook relays must be patched in OpenClaw Core or the relevant identity integration. |
+| CVE-2026-25253 | One-click WebSocket RCE | 8.8 High | Malicious websites fetch localhost browser relay tokens through unauthenticated WebSockets. | **Out of scope.** Network, CORS, and local relay bypasses require network-layer and OpenClaw Core controls. |
+
+### Disrupting the Claw Chain Exploit Path
+
+AgenticDome is designed to interrupt multi-step exploit chains at multiple OpenClaw execution boundaries. A representative chain looks like this:
+
+```text
+[1. Foothold]           [2. Exfiltration]       [3. Privilege Escalation]   [4. Persistence]
+Prompt Injection  --->  Env-Var Read Escape --> MCP Context Spoofing    --> Sandbox Write Escape
+(Untrusted Data)        (CVE-2026-44115)        (CVE-2026-44118)           (CVE-2026-44112)
+       |                        |                        |                         |
+       v                        v                        v                         v
+Blocked via              Blocked via              Blocked via                Core Engine
+before_agent_run         tool_result_persist      _decision_token            Sandbox Patch
+```
+
+By enforcing policy before agent execution, before tool execution, and before tool results are persisted, AgenticDome can stop progression at steps 1, 2, and 3. Even if an attacker discovers a new data-read primitive, the middleware can still flag credential exfiltration or unauthorized cross-agent execution attempts before the attack reaches full host persistence.
+
+AgenticDome should be deployed alongside normal OpenClaw hardening: least-privilege runtime users, patched sandbox isolation, strict network binding, stable identity claims, human approval for irreversible actions, and production-grade secret management.
+
+---
+
 ## Configuration
 
 Configure your local OpenClaw runtime, server, or hosting container with credentials from the AgenticDome console.
