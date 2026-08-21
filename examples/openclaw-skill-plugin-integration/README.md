@@ -11,12 +11,16 @@ npm install
 ## Configure
 
 ```bash
-export AGENTICDOME_API_BASE="https://www.agenticdome.io"
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 export AGENTICDOME_TENANT_ID="<tenant_id>"
 export AGENTICDOME_API_KEY="<tenant_api_key>"
 export AGENTICDOME_REQUIRE_SESSION_ID="true"
 export AGENTICDOME_FAIL_CLOSED="true"
 ```
+
+The API base is supplied for the tenant's managed regional or contracted
+Sovereign deployment. Normal plugin use does not require customer-managed
+Redis.
 
 Install the runtime plugin:
 

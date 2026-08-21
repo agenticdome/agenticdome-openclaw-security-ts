@@ -7,10 +7,16 @@
 ## Required Environment
 
 ```bash
-export AGENTICDOME_API_BASE="https://www.agenticdome.io"
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 export AGENTICDOME_TENANT_ID="<tenant_id>"
 export AGENTICDOME_API_KEY="<tenant_api_key>"
 ```
+
+Use the API base supplied for the tenant. Managed deployments use an assigned
+sidecar in the selected supported geographic region, subject to availability;
+Sovereign deployments use the endpoint inside the contracted
+customer-controlled environment. This test and plugin do not require
+customer-managed Redis.
 
 For strict security-policy release gates, add:
 

@@ -1,7 +1,8 @@
 # AgenticDome OpenClaw Security Plugin
 
 [![npm version](https://img.shields.io/npm/v/agenticdome-openclaw-security.svg)](https://www.npmjs.com/package/agenticdome-openclaw-security)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 > **Zero-Trust Security Middleware for Multi-Agent OpenClaw Architectures.**
 
@@ -28,12 +29,24 @@ This is not a sandbox replacement and does not remove the need for least-privile
 
 To eliminate deployment confusion, AgenticDome operates on a **hybrid split-plane model**.
 
-The local OpenClaw runtime handles agent and skill execution. The centralized AgenticDome cloud governance plane handles policy decisions, tenant configuration, security analytics, and API-key based authorization.
+The local OpenClaw runtime handles agent and skill execution. The tenant's assigned AgenticDome runtime sidecar authenticates and evaluates live plugin requests. The management control plane distributes tenant configuration to that sidecar out of band and is not the per-action plugin endpoint.
+
+For managed service, AgenticDome assigns a sidecar in the customer's selected
+supported geographic region, subject to availability and plan or contract.
+Under a Sovereign deployment, the runtime is deployed inside the contracted
+customer-controlled boundary, such as a dedicated VPC, customer cloud, or
+on-premises environment. The plugin connects to the tenant-specific API base
+provided during onboarding; it does not select or change runtime placement.
+
+OpenClaw plugin customers do not install Redis for normal policy checks. The
+plugin keeps its short-lived local handoff state in memory, while backing
+services used by an AgenticDome-managed sidecar are operated as part of that
+runtime.
 
 ```text
-[ Local Enterprise Runtime Perimeter ]            [ Cloud Governance Plane ]
+[ Local Enterprise Runtime Perimeter ]            [ Assigned Runtime Sidecar ]
 ┌────────────────────────────────────┐            ┌────────────────────────┐
-│ • OpenClaw App Engine              │  HTTPS/RPC │ • agenticdome.io       │
+│ • OpenClaw App Engine              │  HTTPS/RPC │ • Tenant policy        │
 │ • Custom & Marketplace Skills      │───────────>│ • Centralized Rules    │
 │ • AgenticDome Middleware Plugin    │<───────────│ • Threat Analytics     │
 └────────────────────────────────────┘  Verdict   └────────────────────────┘
@@ -45,7 +58,7 @@ The local OpenClaw runtime handles agent and skill execution. The centralized Ag
 | :--- | :--- | :--- |
 | **The Enterprise / Organization** | Hosts the local OpenClaw runtime environment. Subscribes to the centralized dashboard to create policies, obtain a `Tenant ID`, and manage API keys. | **Paid Subscriber**, SaaS license or API volume |
 | **The Skill Developer** | Builds and ships modular agent tools such as database connectors, API handlers, CRM skills, and automation skills. They can use this package to ensure tools pass delegation token parameters correctly. | **Free Ecosystem Partner**, no subscription required |
-| **The Plugin, this package** | Runs inside the local OpenClaw runtime. It intercepts lifecycle events and calls the AgenticDome cloud plane for fast policy verdicts before allowing prompts, tool calls, delegated actions, or outputs to proceed. | **Infrastructure Utility** |
+| **The Plugin, this package** | Runs inside the local OpenClaw runtime. It intercepts lifecycle events and calls the assigned AgenticDome runtime sidecar for policy verdicts before allowing prompts, tool calls, delegated actions, or outputs to proceed. | **Infrastructure Utility** |
 
 ---
 
@@ -135,8 +148,8 @@ Configure your local OpenClaw runtime, server, or hosting container with credent
 ### Required Environment Variables
 
 ```bash
-# Regional gateway base URL.
-export AGENTICDOME_API_BASE="https://au.agenticdome.io"
+# Tenant-assigned runtime sidecar URL. Do not use the management-console URL.
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 
 # Secure access token generated in the AgenticDome console.
 export AGENTICDOME_API_KEY="your_api_key_abc123..."
@@ -251,7 +264,7 @@ The plugin supports three execution paths:
    - `handoff_to_agent`
    - `transfer_to_agent`
 
-   AgenticDome authorizes the delegation and returns a decision token. The plugin stores the token in memory with a TTL and verifies it with the cloud governance plane before specialist execution.
+   AgenticDome authorizes the delegation and returns a decision token. The plugin stores the token in memory with a TTL and verifies it through the assigned runtime before specialist execution.
 
    The plugin injects the token into:
 
@@ -296,7 +309,7 @@ The middleware handles authorization, token injection, and output sanitization a
 
 When a manager agent delegates a task to a specialist agent, the middleware automatically injects a short-lived `_decision_token` into nested downstream parameters.
 
-The specialist execution path verifies that token against the cloud governance plane before running the target function.
+The specialist execution path verifies that token through the assigned runtime before running the target function.
 
 This allows skill developers to build modular tools while enterprises enforce centralized policy.
 
@@ -460,7 +473,7 @@ import { OpenClawFirewall } from 'agenticdome-openclaw-security';
 ## Recommended Production Settings
 
 ```bash
-export AGENTICDOME_API_BASE="https://au.agenticdome.io"
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 export AGENTICDOME_FAIL_CLOSED="true"
 export AGENTICDOME_REQUIRE_SESSION_ID="true"
 export AGENTICDOME_REDACT_PII="true"
@@ -491,7 +504,7 @@ npm pack --dry-run
 For a release gate against a real AgenticDome tenant:
 
 ```bash
-export AGENTICDOME_API_BASE="https://www.agenticdome.io"
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 export AGENTICDOME_TENANT_ID="<tenant_id>"
 export AGENTICDOME_API_KEY="<tenant_api_key>"
 npm run test:live-tenant
@@ -525,13 +538,15 @@ A copyable skill/plugin integration example is available at [`examples/openclaw-
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+The OpenClaw client plugin and its public documentation are open source under the [Apache License 2.0](https://github.com/agenticdome/agenticdome-openclaw-security-ts/blob/main/LICENSE). Live policy enforcement requires an active AgenticDome tenant and assigned runtime service. The AgenticDome sidecar, management console, policy engine, threat intelligence, and server-side decision logic are separate proprietary products and are not licensed under this package's Apache-2.0 license. See [NOTICE](https://github.com/agenticdome/agenticdome-openclaw-security-ts/blob/main/NOTICE) for the commercial service boundary.
 
 ---
 
 ## Community Feedback
 
 This package is intended to fit OpenClaw's plugin model rather than bypass it. Feedback from OpenClaw maintainers, plugin developers, and security reviewers is welcome, especially around packaging conventions, hook usage, synchronous transcript persistence behavior, and safe defaults for high-risk tool execution.
+
+Use the public [issue tracker](https://github.com/agenticdome/agenticdome-openclaw-security-ts/issues) for ordinary questions and defects, follow [CONTRIBUTING.md](https://github.com/agenticdome/agenticdome-openclaw-security-ts/blob/main/CONTRIBUTING.md) for pull requests, and report vulnerabilities privately under [SECURITY.md](https://github.com/agenticdome/agenticdome-openclaw-security-ts/blob/main/SECURITY.md).
 
 ### Integration Summary for Developers
 

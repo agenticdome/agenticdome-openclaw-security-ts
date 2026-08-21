@@ -26,10 +26,13 @@ Use Node.js `>=22.19.0`, matching current OpenClaw runtime requirements. Verify 
 Configure these in the OpenClaw runtime environment, not inside source code:
 
 ```bash
-export AGENTICDOME_API_BASE="https://au.agenticdome.io"
+export AGENTICDOME_API_BASE="https://your-assigned-sidecar.example"
 export AGENTICDOME_API_KEY="..."
 export AGENTICDOME_TENANT_ID="..."
 ```
+
+Use the API base supplied for the tenant's managed regional or contracted
+Sovereign deployment. The plugin does not require customer-managed Redis.
 
 ## Skill Developer Pattern
 

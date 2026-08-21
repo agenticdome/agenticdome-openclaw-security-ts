@@ -39,9 +39,12 @@ test('screenPrompt blocks blocked verdicts', async () => {
 
 test('authorizeManagerHandoff stores and injects decision token for specialist verification', async () => {
   const firewall = new OpenClawFirewall(config);
-  firewall.client.a2aAuthorizeTool = async () => ({
-    result: { verdict: 'ALLOWED', decision_token: 'decision-token-1' },
-  });
+  firewall.client.a2aAuthorizeTool = async (payload) => {
+    const identity = payload.policyContext.agenticdome_identity;
+    assert.equal(identity.subject.id, 'alice');
+    assert.deepEqual(identity.actors.map((actor) => actor.id), ['manager-1', 'specialist-1']);
+    return { result: { verdict: 'ALLOWED', decision_token: 'decision-token-1' } };
+  };
   firewall.client.a2aVerifyDecisionTokenRpc = async (token, payload) => {
     assert.equal(token, 'decision-token-1');
     assert.equal(payload.agentId, 'specialist-1');
@@ -55,6 +58,7 @@ test('authorizeManagerHandoff stores and injects decision token for specialist v
     skillName: 'crm.lookup',
     skillArgs: { customer_id: '123' },
     sessionId: 'sess-1',
+    policyContext: { user_id: 'alice' },
   });
 
   assert.equal(envelope.decision_token, 'decision-token-1');

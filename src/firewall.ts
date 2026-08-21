@@ -161,6 +161,64 @@ function canonicalJson(value: unknown): string {
   return JSON.stringify(sortObject(safeValue));
 }
 
+function protocolV2IdentityContext(context: Dict, platform: string, targetAgentId: string): Dict {
+  const existing = context.agenticdome_identity;
+  if (existing && typeof existing === 'object' && existing.version === 'agenticdome.identity.v1') {
+    return existing;
+  }
+
+  const claims = context.verified_identity_claims && typeof context.verified_identity_claims === 'object'
+    ? context.verified_identity_claims as Dict
+    : {};
+  const subjectId = String(
+    context.user_id || context.principal_id || context.caller_id || claims.oid || claims.sub || claims.user_id || ''
+  ).trim();
+  const subject = subjectId ? {
+    id: subjectId,
+    type: context.user_id || context.principal_id || claims.oid ? 'human' : 'principal',
+    tenant_id: String(claims.tid || context.entra_tenant_id || context.tenant_id || '').trim() || null,
+    issuer: String(claims.iss || context.issuer || '').trim() || null,
+    provenance: context.user_id || context.principal_id ? 'runtime_context' : 'client_claim_assertion',
+    verified: false
+  } : null;
+
+  const actors: Dict[] = [];
+  const addActor = (idValue: unknown, frameworkValue: unknown, provenance: string): void => {
+    const id = String(idValue || '').trim();
+    if (!id || id.length > 512 || actors.length >= 32 || actors.some((actor) => actor.id === id)) return;
+    actors.push({
+      id,
+      type: 'agent',
+      framework: String(frameworkValue || '').trim() || null,
+      verified: false,
+      provenance
+    });
+  };
+  const rawChain = context.actor_chain || context.delegation_chain || [];
+  for (const item of Array.isArray(rawChain) ? rawChain : [rawChain]) {
+    if (item && typeof item === 'object') {
+      const actor = item as Dict;
+      addActor(actor.id || actor.sub || actor.agent_id, actor.framework || actor.platform, 'client_runtime_assertion');
+    } else {
+      addActor(item, '', 'runtime_context');
+    }
+  }
+  addActor(context.source_agent_id, context.source_platform || platform, 'request_binding');
+  addActor(targetAgentId, platform, 'request_binding');
+
+  return {
+    version: 'agenticdome.identity.v1',
+    framework: platform || 'openclaw',
+    subject,
+    actors,
+    provenance: {
+      client_claims_asserted: Object.keys(claims).length > 0,
+      verified_claims_present: false,
+      native_context_hash: `sha256:${sha256(canonicalJson(context))}`
+    }
+  };
+}
+
 function toolFingerprint(toolName: string, toolArgs: Dict): string {
   return sha256(
     canonicalJson({
@@ -615,6 +673,12 @@ export class OpenClawFirewall {
     if (args.extra) {
       Object.assign(ctx, args.extra);
     }
+
+    ctx.agenticdome_identity = protocolV2IdentityContext(
+      ctx,
+      this.config.platform,
+      args.agentId
+    );
 
     return ctx;
   }
