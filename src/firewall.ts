@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
-import AgentGuardClient, {
-  AgentGuardError,
-  AgentGuardHTTPError
+import AgenticDomeClient, {
+  AgenticDomeError,
+  AgenticDomeHTTPError
 } from 'agenticdome-sdk';
 
 export type Dict = Record<string, any>;
@@ -307,59 +307,23 @@ export interface OpenClawFirewallConfig {
 }
 
 export const DEFAULT_CONFIG: OpenClawFirewallConfig = {
-  apiBase: env('AGENTICDOME_API_BASE', env('AgenticDome_API_BASE')).replace(/\/+$/, ''),
-  apiKey: env('AGENTICDOME_API_KEY', env('AgenticDome_API_KEY')),
-  tenantId: env('AGENTICDOME_TENANT_ID', env('AgenticDome_TENANT_ID')),
-
-  platform: env('AGENTICDOME_PLATFORM', env('AgenticDome_PLATFORM', 'openclaw')),
-  timeoutS: envInt('AGENTICDOME_TIMEOUT_S', envInt('AgenticDome_TIMEOUT_S', 20)),
-  failClosed: envBool('AGENTICDOME_FAIL_CLOSED', envBool('AgenticDome_FAIL_CLOSED', true)),
-  requireExplicitSessionId: envBool(
-    'AGENTICDOME_REQUIRE_SESSION_ID',
-    envBool('AgenticDome_REQUIRE_SESSION_ID', true)
-  ),
-
-  defaultToolPlatform: env(
-    'AGENTICDOME_DEFAULT_TOOL_PLATFORM',
-    env('AgenticDome_DEFAULT_TOOL_PLATFORM', 'python')
-  ),
-
-  redactPii: envBool('AGENTICDOME_REDACT_PII', envBool('AgenticDome_REDACT_PII', true)),
-  redactSecrets: envBool(
-    'AGENTICDOME_REDACT_SECRETS',
-    envBool('AgenticDome_REDACT_SECRETS', true)
-  ),
-  blockOnSensitiveOutput: envBool(
-    'AGENTICDOME_BLOCK_ON_SENSITIVE_OUTPUT',
-    envBool('AgenticDome_BLOCK_ON_SENSITIVE_OUTPUT', false)
-  ),
-
-  handoffTokenTtlS: envInt(
-    'AGENTICDOME_HANDOFF_TOKEN_TTL_S',
-    envInt('AgenticDome_HANDOFF_TOKEN_TTL_S', 900)
-  ),
-
-  sdkMaxRetries: envInt(
-    'AGENTICDOME_SDK_MAX_RETRIES',
-    envInt('AgenticDome_SDK_MAX_RETRIES', 3)
-  ),
-  retryMaxAttempts: envInt(
-    'AGENTICDOME_RETRY_MAX_ATTEMPTS',
-    envInt('AgenticDome_RETRY_MAX_ATTEMPTS', 1)
-  ),
-  retryInitialDelayS: envFloat(
-    'AGENTICDOME_RETRY_INITIAL_DELAY_S',
-    envFloat('AgenticDome_RETRY_INITIAL_DELAY_S', 0.25)
-  ),
-  retryMaxDelayS: envFloat(
-    'AGENTICDOME_RETRY_MAX_DELAY_S',
-    envFloat('AgenticDome_RETRY_MAX_DELAY_S', 2.0)
-  ),
-
-  outputSerializationMaxChars: envInt(
-    'AGENTICDOME_OUTPUT_SERIALIZATION_MAX_CHARS',
-    envInt('AgenticDome_OUTPUT_SERIALIZATION_MAX_CHARS', 200_000)
-  )
+  apiBase: env("AGENTICDOME_API_BASE").replace(/\/+$/, ""),
+  apiKey: env("AGENTICDOME_API_KEY"),
+  tenantId: env("AGENTICDOME_TENANT_ID"),
+  platform: env("AGENTICDOME_PLATFORM", "openclaw"),
+  timeoutS: envInt("AGENTICDOME_TIMEOUT_S", 20),
+  failClosed: envBool("AGENTICDOME_FAIL_CLOSED", true),
+  requireExplicitSessionId: envBool("AGENTICDOME_REQUIRE_SESSION_ID", true),
+  defaultToolPlatform: env("AGENTICDOME_DEFAULT_TOOL_PLATFORM", "python"),
+  redactPii: envBool("AGENTICDOME_REDACT_PII", true),
+  redactSecrets: envBool("AGENTICDOME_REDACT_SECRETS", true),
+  blockOnSensitiveOutput: envBool("AGENTICDOME_BLOCK_ON_SENSITIVE_OUTPUT", false),
+  handoffTokenTtlS: envInt("AGENTICDOME_HANDOFF_TOKEN_TTL_S", 900),
+  sdkMaxRetries: envInt("AGENTICDOME_SDK_MAX_RETRIES", 3),
+  retryMaxAttempts: envInt("AGENTICDOME_RETRY_MAX_ATTEMPTS", 1),
+  retryInitialDelayS: envFloat("AGENTICDOME_RETRY_INITIAL_DELAY_S", 0.25),
+  retryMaxDelayS: envFloat("AGENTICDOME_RETRY_MAX_DELAY_S", 2.0),
+  outputSerializationMaxChars: envInt("AGENTICDOME_OUTPUT_SERIALIZATION_MAX_CHARS", 200_000),
 };
 
 export class OpenClawFirewallError extends Error {
@@ -505,7 +469,7 @@ export class OpenClawFirewall {
   private static readonly RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
   public readonly config: OpenClawFirewallConfig;
-  public readonly client: AgentGuardClient;
+  public readonly client: AgenticDomeClient;
   private readonly tokenStore: DecisionTokenStore;
 
   constructor(config: Partial<OpenClawFirewallConfig> = {}) {
@@ -520,7 +484,7 @@ export class OpenClawFirewall {
       );
     }
 
-    this.client = new AgentGuardClient(this.config.apiBase, {
+    this.client = new AgenticDomeClient(this.config.apiBase, {
       apiKey: this.config.apiKey,
       tenantId: this.config.tenantId,
       timeout: this.config.timeoutS,
@@ -549,7 +513,7 @@ export class OpenClawFirewall {
   }
 
   private httpStatus(error: unknown): number | undefined {
-    if (error instanceof AgentGuardHTTPError) {
+    if (error instanceof AgenticDomeHTTPError) {
       return error.statusCode;
     }
 
@@ -566,7 +530,7 @@ export class OpenClawFirewall {
   }
 
   private isRetryableException(error: unknown): boolean {
-    if (error instanceof AgentGuardHTTPError) {
+    if (error instanceof AgenticDomeHTTPError) {
       const status = this.httpStatus(error);
       return status !== undefined && OpenClawFirewall.RETRYABLE_STATUS_CODES.has(status);
     }
@@ -587,7 +551,7 @@ export class OpenClawFirewall {
     ].some((marker) => text.includes(marker));
   }
 
-  private async agentguardCall<T>(methodName: string, fn: () => Promise<T>): Promise<T> {
+  private async agenticDomeCall<T>(methodName: string, fn: () => Promise<T>): Promise<T> {
     const maxAttempts = Math.max(1, Math.trunc(this.config.retryMaxAttempts));
     const baseDelay = Math.max(0, this.config.retryInitialDelayS);
     const maxDelay = Math.max(baseDelay, this.config.retryMaxDelayS);
@@ -694,7 +658,7 @@ export class OpenClawFirewall {
     const text = nonemptyText(args.text, '[empty prompt]');
 
     try {
-      const response = await this.agentguardCall('guardrailValidate', () =>
+      const response = await this.agenticDomeCall('guardrailValidate', () =>
         this.client.guardrailValidate({
           sessionId: args.sessionId,
           direction: 'input',
@@ -717,7 +681,7 @@ export class OpenClawFirewall {
       return response;
     } catch (error) {
       if (error instanceof OpenClawExecutionDenied) throw error;
-      if (!(error instanceof AgentGuardError) && error instanceof Error && error.name === 'Error') {
+      if (!(error instanceof AgenticDomeError) && error instanceof Error && error.name === 'Error') {
         this.failOrRaise(`AgenticDome input screening error: ${errorMessage(error)}`, error);
         return {};
       }
@@ -745,7 +709,7 @@ export class OpenClawFirewall {
     const effectiveToolPlatform = this.toolPlatform(args.toolPlatform, skillArgs);
 
     try {
-      const response = await this.agentguardCall('guardrailValidate', () =>
+      const response = await this.agenticDomeCall('guardrailValidate', () =>
         this.client.guardrailValidate({
           sessionId: args.sessionId,
           direction: 'outbound',
@@ -801,7 +765,7 @@ export class OpenClawFirewall {
     const effectiveToolPlatform = this.toolPlatform(args.toolPlatform, skillArgs);
 
     try {
-      const response = await this.agentguardCall('a2aAuthorizeTool', () =>
+      const response = await this.agenticDomeCall('a2aAuthorizeTool', () =>
         this.client.a2aAuthorizeTool({
           text,
           agentId: args.specialistAgentId,
@@ -895,7 +859,7 @@ export class OpenClawFirewall {
     }
 
     try {
-      const response = await this.agentguardCall('a2aVerifyDecisionTokenRpc', () =>
+      const response = await this.agenticDomeCall('a2aVerifyDecisionTokenRpc', () =>
         this.client.a2aVerifyDecisionTokenRpc(token!, {
           toolName: args.skillName,
           toolArgs: skillArgs,
@@ -933,7 +897,7 @@ export class OpenClawFirewall {
     const safeText = nonemptyText(args.text, '[empty output]');
 
     try {
-      const response = await this.agentguardCall('meshValidate', () =>
+      const response = await this.agenticDomeCall('meshValidate', () =>
         this.client.meshValidate({
           agentId: args.agentId,
           sessionId: args.sessionId,

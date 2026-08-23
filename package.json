@@ -1,7 +1,7 @@
 {
   "name": "agenticdome-openclaw-security",
-  "version": "1.0.1",
-  "description": "AgenticDome zero-trust security firewall plugin for OpenClaw",
+  "version": "1.0.2",
+  "description": "AgenticDome action firewall for OpenClaw prompt, tool, delegation, and transcript boundaries",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -43,7 +43,7 @@
     "test:release": "npm run typecheck && npm test && npm run test:live-tenant && npm pack --dry-run"
   },
   "dependencies": {
-    "agenticdome-sdk": "^0.6.1"
+    "agenticdome-sdk": "^0.6.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
@@ -52,7 +52,7 @@
     "typescript": "^5.7.2"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0"
   },
   "publishConfig": {
     "access": "public"

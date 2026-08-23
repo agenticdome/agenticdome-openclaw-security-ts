@@ -2,16 +2,16 @@
 
 ## Node Runtime
 
-OpenClaw requires Node.js `>=22.19.0`. The admin SDK harness searches these sources in order:
+OpenClaw requires Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`. The admin SDK harness searches these sources in order:
 
-1. `NODE_BINARY` or `NODE22_BINARY`
+1. `NODE_BINARY` (or the older `NODE22_BINARY` alias)
 2. host `node`
-3. cached `node@22` binaries under `.harness_runtime_ts/npm-cache`
+3. compatible cached Node binaries under `.harness_runtime_ts/npm-cache`
 4. nvm, fnm, asdf, and Volta install paths
 5. `/usr/local/bin/node`, `/opt/node/bin/node`, `/opt/nodejs/bin/node`
-6. `npx -y -p node@22 node`
+6. `npx -y -p node@<compatible-major> node`, derived from the candidate OpenClaw package's `engines.node`
 
-If resolution fails, install Node 22 or set `NODE22_BINARY` to an absolute path.
+If resolution fails, install a Node release accepted by the displayed `engines.node` range or set `NODE_BINARY` to its absolute path. The Laravel release service uses `AGENTICDOME_NODE_BINARY`.
 
 ## npm and npx Under Web Runners
 
@@ -29,7 +29,7 @@ The harness does not download OpenClaw every run. It resolves `openclaw@latest` 
 Pin a version with:
 
 ```bash
-export OPENCLAW_CLI_VERSION="2026.6.10"
+export OPENCLAW_CLI_VERSION="2026.7.1-2"
 ```
 
 ## Required OpenClaw Hook Consent

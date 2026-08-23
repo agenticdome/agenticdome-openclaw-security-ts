@@ -1,4 +1,4 @@
-# AgenticDome OpenClaw Security Plugin
+# AgenticDome OpenClaw Action Firewall
 
 [![npm version](https://img.shields.io/npm/v/agenticdome-openclaw-security.svg)](https://www.npmjs.com/package/agenticdome-openclaw-security)
 [![CI](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml)
@@ -10,7 +10,7 @@
 
 ## Positioning and Coverage
 
-AgenticDome Shield is a native OpenClaw action firewall. It is designed for teams running OpenClaw in regulated, customer-facing, or high-risk automation environments where prompts, tool calls, delegated actions, and persisted outputs need centralized policy control.
+AgenticDome OpenClaw Action Firewall is a native OpenClaw action firewall. It is designed for teams running OpenClaw in regulated, customer-facing, or high-risk automation environments where prompts, tool calls, delegated actions, and persisted outputs need centralized policy control.
 
 Unlike generic prompt guardrails that only inspect model input or output text, this package sits on the OpenClaw runtime boundary and protects the action path:
 
@@ -74,7 +74,7 @@ If you are an **Enterprise Administrator** looking to secure your OpenClaw stack
 
 ## Runtime Requirements
 
-- Node.js `>=22.19.0`, aligned with current OpenClaw runtime requirements.
+- Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, aligned with current OpenClaw runtime requirements.
 - OpenClaw installed through the CLI, or available through `npx openclaw@latest` in environments that use the npm-distributed CLI.
 - AgenticDome tenant credentials in environment variables before the protected hooks are exercised.
 
@@ -84,7 +84,7 @@ Before installing the plugin on a developer workstation or CI runner, confirm th
 node -v
 ```
 
-The version must be `v22.19.0` or newer. The package build and smoke tests can resolve `node@22` with `npx` for verification, but a normal local OpenClaw runtime should itself run on Node.js `>=22.19.0`.
+The version must satisfy `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`. The package build and smoke tests can resolve a compatible Node release with `npx` for verification, but a normal local OpenClaw runtime should itself use a supported Node.js release.
 
 The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install and inspect the plugin before credentials are present; actual prompt, tool, and delegation enforcement still requires `AGENTICDOME_API_BASE`, `AGENTICDOME_API_KEY`, and `AGENTICDOME_TENANT_ID`.
 
@@ -92,7 +92,7 @@ The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install
 
 ## OpenClaw Compatibility
 
-The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). Current release target: Node `>=22.19.0` and OpenClaw CLI `2026.6.10`, plus `openclaw@latest` when the real CLI smoke test passes in your release environment.
+The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). Current certified target: plugin `1.0.1`, Node `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, and OpenClaw CLI `2026.7.1-2` through `2026.7.1-2`. The admin harness tests both endpoints before extending this range.
 
 This package is shaped as a native OpenClaw extension package:
 
@@ -530,7 +530,7 @@ For a CLI package smoke only:
 npm run test:openclaw-cli
 ```
 
-The internal admin SDK harness TypeScript runtime also performs the real OpenClaw CLI install/inspect smoke before running case probes. It requires Node `>=22.19.0`, resolves a Node 22 runtime under web-runner environments, and records the selected Node command/version in the run JSON. The harness caches the resolved OpenClaw CLI under `.harness_runtime_ts/<fingerprint>/openclaw_cli` and only installs again when the cached CLI is missing or `openclaw@latest` resolves to a newer version. See [`docs/troubleshooting.md`](docs/troubleshooting.md).
+The internal admin SDK harness TypeScript runtime also performs the real OpenClaw CLI install/inspect smoke before running case probes. It reads the candidate CLI's `engines.node` metadata first, resolves a compatible Node runtime under web-runner environments, and records the selected Node command/version in the run JSON. The harness caches the resolved OpenClaw CLI under `.harness_runtime_ts/<fingerprint>/openclaw_cli` and only installs again when the cached CLI is missing or `openclaw@latest` resolves to a newer version. See [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
 A copyable skill/plugin integration example is available at [`examples/openclaw-skill-plugin-integration`](examples/openclaw-skill-plugin-integration).
 

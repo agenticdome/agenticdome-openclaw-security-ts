@@ -23,6 +23,23 @@ function parseLastJson(text) {
   return JSON.parse(raw);
 }
 
+function resolveOpenClawRuntime() {
+  const metadata = JSON.parse(
+    run('npm', ['view', 'openclaw@latest', 'version', 'engines', '--json', '--silent'])
+  );
+  const version = String(metadata?.version || '').trim();
+  const nodeEngine = String(metadata?.engines?.node || '').trim();
+  assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, 'npm returned an immutable OpenClaw version');
+  assert.ok(nodeEngine, 'OpenClaw declares engines.node');
+
+  const majors = [...nodeEngine.matchAll(/(?:^|\|\|)\s*>=?\s*(\d+)/g)]
+    .map((match) => Number(match[1]))
+    .filter((major) => Number.isInteger(major) && major > 0);
+  assert.ok(majors.length > 0, `Unable to derive a Node major from OpenClaw engines.node: ${nodeEngine}`);
+
+  return { version, nodeEngine, nodeMajor: majors[0] };
+}
+
 try {
   run('npm', ['pack', '--pack-destination', tmp]);
   const tarballs = fs.readdirSync(tmp).filter((name) => name.endsWith('.tgz'));
@@ -36,7 +53,8 @@ try {
     XDG_DATA_HOME: path.join(home, '.local', 'share'),
     XDG_CACHE_HOME: path.join(home, '.cache'),
   };
-  const cli = ['-y', '-p', 'node@22', '-p', 'openclaw@latest', 'openclaw'];
+  const runtime = resolveOpenClawRuntime();
+  const cli = ['-y', '-p', `node@${runtime.nodeMajor}`, '-p', `openclaw@${runtime.version}`, 'openclaw'];
   const spec = `npm-pack:${path.join(tmp, tarballs[0])}`;
 
   run('npx', [...cli, 'plugins', 'install', spec, '--force'], { env: openclawEnv, timeout: 240_000 });
@@ -61,6 +79,9 @@ try {
   console.log(JSON.stringify({
     status: 'passed',
     openclaw_plugin_status: inspect.plugin.status,
+    openclaw_version: runtime.version,
+    openclaw_node_engine: runtime.nodeEngine,
+    selected_node_major: runtime.nodeMajor,
     hook_count: inspect.plugin.hookCount,
     hooks,
   }, null, 2));

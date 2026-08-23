@@ -61,10 +61,7 @@ function envInt(name: string, fallback: number): number {
 }
 
 function localOutputSerializationMaxChars(): number {
-  return envInt(
-    'AGENTICDOME_OUTPUT_SERIALIZATION_MAX_CHARS',
-    envInt('AgenticDome_OUTPUT_SERIALIZATION_MAX_CHARS', 200_000)
-  );
+  return envInt("AGENTICDOME_OUTPUT_SERIALIZATION_MAX_CHARS", 200_000);
 }
 
 export function redactLocalText(text: string): string {
@@ -158,7 +155,7 @@ export function redactOpenClawMessage(message: unknown, maxChars: number): unkno
 
 export default definePluginEntry({
   id: 'agenticdome-security',
-  name: 'AgenticDome Shield',
+  name: 'AgenticDome OpenClaw Action Firewall',
   description:
     'Zero-trust prompt, tool, delegation, and transcript persistence security for OpenClaw runtimes.',
   configSchema: {

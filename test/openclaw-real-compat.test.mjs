@@ -33,7 +33,7 @@ test('plugin entry matches real OpenClaw plugin-entry metadata contract', { skip
 
   const { default: plugin } = await import(`../dist/index.mjs?realEntry=${Date.now()}`);
   assert.equal(plugin.id, 'agenticdome-security');
-  assert.equal(plugin.name, 'AgenticDome Shield');
+  assert.equal(plugin.name, 'AgenticDome OpenClaw Action Firewall');
   assert.equal(typeof plugin.description, 'string');
   assert.ok(plugin.description.length > 30);
   assert.equal(plugin.configSchema.type, 'object');

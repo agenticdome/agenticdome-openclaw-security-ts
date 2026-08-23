@@ -3,7 +3,7 @@
   "activation": {
     "onStartup": true
   },
-  "name": "AgenticDome Shield",
+  "name": "AgenticDome OpenClaw Action Firewall",
   "description": "Zero-trust prompt, tool, delegation, and transcript persistence security for OpenClaw runtimes.",
   "configSchema": {
     "type": "object",

@@ -19,7 +19,7 @@ Use this skill when an OpenClaw plugin, agent, or skill performs one of these ac
 
 ## Runtime Requirements
 
-Use Node.js `>=22.19.0`, matching current OpenClaw runtime requirements. Verify the plugin with the real OpenClaw CLI before production rollout.
+Use Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, matching current OpenClaw runtime requirements. Verify the plugin with the real OpenClaw CLI before production rollout.
 
 ## Required Runtime Variables
 
