@@ -1,6 +1,6 @@
 {
   "name": "agenticdome-openclaw-security",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "AgenticDome action firewall for OpenClaw prompt, tool, delegation, and transcript boundaries",
   "license": "Apache-2.0",
   "type": "module",
@@ -43,7 +43,7 @@
     "test:release": "npm run typecheck && npm test && npm run test:live-tenant && npm pack --dry-run"
   },
   "dependencies": {
-    "agenticdome-sdk": "^0.6.4"
+    "agenticdome-sdk": "^0.6.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

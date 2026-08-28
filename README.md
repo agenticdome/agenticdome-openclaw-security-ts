@@ -92,7 +92,7 @@ The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install
 
 ## OpenClaw Compatibility
 
-The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). Current certified target: plugin `1.0.1`, Node `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, and OpenClaw CLI `2026.7.1-2` through `2026.7.1-2`. The admin harness tests both endpoints before extending this range.
+The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). The immutable npm package version and current certified OpenClaw range are resolved and tested by the AgenticDome SDK Harness; this README deliberately does not duplicate a version number that can become stale. The supported Node contract is `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`.
 
 This package is shaped as a native OpenClaw extension package:
 
@@ -114,9 +114,9 @@ OpenClaw agents often operate with meaningful host, workspace, network, or tool 
 
 | CVE ID | Vulnerability class | CVSS score | Impact / exploitation pattern | AgenticDome coverage strategy |
 | --- | --- | --- | --- | --- |
-| CVE-2026-44115 | Credential and environment-variable leaks | 8.8 High | Shell command expansions in unquoted heredocs can return API keys to the model output transcript. | **Mitigated via `tool_result_persist`.** Locally detects and redacts environment keys before output text is serialized into logs or transcripts. |
-| CVE-2026-44118 | MCP privilege escalation | 7.8 High | Unverified ownership flags allow ordinary tasks to masquerade as root or system operators. | **Mitigated via handoff verification.** `authorizeManagerHandoff()` enforces ephemeral `_decision_token` rules to block unauthorized lateral tool jumps. |
-| N/A | Indirect prompt injection | N/A | Adversarial text read from untrusted files hijacks the orchestration runtime loop. | **Mitigated via `before_agent_run`.** Screens incoming context payloads through tenant policy before system tasks trigger. |
+| CVE-2026-44115 | Credential and environment-variable leaks | 8.8 High | Shell command expansions in unquoted heredocs can return API keys to the model output transcript. | **Coverage at the protected persistence boundary.** `tool_result_persist` locally detects and redacts supported environment-key patterns before output text is serialized. This does not repair the underlying shell or prevent leakage through an unprotected path. |
+| CVE-2026-44118 | MCP privilege escalation | 7.8 High | Unverified ownership flags allow ordinary tasks to masquerade as root or system operators. | **Coverage for protected handoffs.** `authorizeManagerHandoff()` verifies ephemeral `_decision_token` rules for instrumented delegation paths. It does not replace MCP authorization or repair the underlying ownership flaw. |
+| N/A | Indirect prompt injection | N/A | Adversarial text read from untrusted files hijacks the orchestration runtime loop. | **Policy screening at prompt ingress.** `before_agent_run` evaluates incoming context through tenant policy. Protection applies only when traffic reaches this registered hook. |
 | CVE-2026-44112 | Sandbox filesystem escape | 9.6 Critical | A TOCTOU symlink race condition allows agents to write files outside the workspace root. | **Indirectly contained.** AgenticDome cannot patch OS-level race conditions, but it can block prompt-injection and unauthorized-tool patterns commonly used to trigger them. |
 | CVE-2026-53849 | Identity spoofing | 8.6 High | `allowFrom` access controls evaluate mutable Discord display names rather than unique user IDs. | **Out of scope.** Authentication flaws in external webhook relays must be patched in OpenClaw Core or the relevant identity integration. |
 | CVE-2026-25253 | One-click WebSocket RCE | 8.8 High | Malicious websites fetch localhost browser relay tokens through unauthenticated WebSockets. | **Out of scope.** Network, CORS, and local relay bypasses require network-layer and OpenClaw Core controls. |
@@ -131,7 +131,7 @@ Prompt Injection  --->  Env-Var Read Escape --> MCP Context Spoofing    --> Sand
 (Untrusted Data)        (CVE-2026-44115)        (CVE-2026-44118)           (CVE-2026-44112)
        |                        |                        |                         |
        v                        v                        v                         v
-Blocked via              Blocked via              Blocked via                Core Engine
+Policy-screened via      Locally redacted via     Token-verified via          Core Engine
 before_agent_run         tool_result_persist      _decision_token            Sandbox Patch
 ```
 
