@@ -74,7 +74,7 @@ If you are an **Enterprise Administrator** looking to secure your OpenClaw stack
 
 ## Runtime Requirements
 
-- Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, aligned with current OpenClaw runtime requirements.
+- Node.js `>=24.16.0 <25 || >=26.1.0`, aligned with current OpenClaw runtime requirements.
 - OpenClaw installed through the CLI, or available through `npx openclaw@latest` in environments that use the npm-distributed CLI.
 - AgenticDome tenant credentials in environment variables before the protected hooks are exercised.
 
@@ -84,7 +84,7 @@ Before installing the plugin on a developer workstation or CI runner, confirm th
 node -v
 ```
 
-The version must satisfy `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`. The package build and smoke tests can resolve a compatible Node release with `npx` for verification, but a normal local OpenClaw runtime should itself use a supported Node.js release.
+The version must satisfy `>=24.16.0 <25 || >=26.1.0`. The package build and smoke tests can resolve a compatible Node release with `npx` for verification, but a normal local OpenClaw runtime should itself use a supported Node.js release.
 
 The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install and inspect the plugin before credentials are present; actual prompt, tool, and delegation enforcement still requires `AGENTICDOME_API_BASE`, `AGENTICDOME_API_KEY`, and `AGENTICDOME_TENANT_ID`.
 
@@ -92,7 +92,7 @@ The plugin intentionally lazy-loads the AgenticDome client. OpenClaw can install
 
 ## OpenClaw Compatibility
 
-The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). The immutable npm package version and current certified OpenClaw range are resolved and tested by the AgenticDome SDK Harness; this README deliberately does not duplicate a version number that can become stale. The supported Node contract is `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`.
+The supported OpenClaw and Node matrix is maintained in [`docs/compatibility.md`](docs/compatibility.md). The immutable npm package version and current certified OpenClaw range are resolved and tested by the AgenticDome SDK Harness; this README deliberately does not duplicate a version number that can become stale. The supported Node contract is `>=24.16.0 <25 || >=26.1.0`.
 
 This package is shaped as a native OpenClaw extension package:
 

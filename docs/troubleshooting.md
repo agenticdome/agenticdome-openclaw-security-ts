@@ -2,7 +2,7 @@
 
 ## Node Runtime
 
-OpenClaw requires Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`. The admin SDK harness searches these sources in order:
+OpenClaw requires Node.js `>=24.16.0 <25 || >=26.1.0`. The admin SDK harness searches these sources in order:
 
 1. `NODE_BINARY` (or the older `NODE22_BINARY` alias)
 2. host `node`

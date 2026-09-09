@@ -2,7 +2,7 @@
 
 ## Local verification
 
-Use Node.js `>=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0`, then run:
+Use Node.js `>=24.16.0 <25 || >=26.1.0`, then run:
 
 ```bash
 npm ci

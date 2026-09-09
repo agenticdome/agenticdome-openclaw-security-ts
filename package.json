@@ -1,6 +1,6 @@
 {
     "name": "agenticdome-openclaw-security",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "AgenticDome action firewall for OpenClaw prompt, tool, delegation, and transcript boundaries",
     "license": "Apache-2.0",
     "type": "module",
@@ -43,7 +43,7 @@
         "test:release": "npm run typecheck && npm test && npm run test:live-tenant && npm pack --dry-run"
     },
     "dependencies": {
-        "agenticdome-sdk": "^0.6.7"
+        "agenticdome-sdk": "^0.6.8"
     },
     "devDependencies": {
         "@types/node": "^22.10.2",
@@ -52,7 +52,7 @@
         "typescript": "^5.7.2"
     },
     "engines": {
-        "node": ">=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0"
+        "node": ">=24.16.0 <25 || >=26.1.0"
     },
     "publishConfig": {
         "access": "public"
@@ -73,11 +73,11 @@
             "pluginApi": ">=2026.7.1-2"
         },
         "build": {
-            "openclawVersion": "2026.8.1",
-            "pluginSdkVersion": "2026.8.1"
+            "openclawVersion": "2026.9.3",
+            "pluginSdkVersion": "2026.9.3"
         },
         "install": {
-            "npmSpec": "agenticdome-openclaw-security@1.0.6",
+            "npmSpec": "agenticdome-openclaw-security@1.0.7",
             "minHostVersion": ">=2026.7.1-2"
         }
     },
