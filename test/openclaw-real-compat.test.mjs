@@ -44,7 +44,7 @@ test('registered hooks are real OpenClaw hooks and sync-only persist hook stays 
   const hookTypes = readReal('src/plugins/hook-types.ts');
   const hooksRuntime = readReal('src/plugins/hooks.ts');
 
-  for (const hookName of ['before_agent_run', 'before_tool_call', 'tool_result_persist']) {
+  for (const hookName of ['before_agent_run', 'before_tool_call', 'after_tool_call', 'tool_result_persist']) {
     assert.match(hookTypes, new RegExp(`\\"${hookName}\\"|${hookName}`), `${hookName} is declared by real OpenClaw`);
   }
   assert.match(hooksRuntime, /tool_result_persist handler from .* returned a Promise/);
@@ -63,7 +63,7 @@ test('registered hooks are real OpenClaw hooks and sync-only persist hook stays 
     },
   });
 
-  assert.deepEqual([...handlers.keys()].sort(), ['before_agent_run', 'before_tool_call', 'tool_result_persist']);
+  assert.deepEqual([...handlers.keys()].sort(), ['after_tool_call', 'before_agent_run', 'before_tool_call', 'tool_result_persist']);
 
   const persistHandler = handlers.get('tool_result_persist');
   assert.notEqual(persistHandler.constructor.name, 'AsyncFunction');

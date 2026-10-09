@@ -1,5 +1,7 @@
 # AgenticDome OpenClaw Action Firewall
 
+`protectedExecute` and the native `before_tool_call` / `after_tool_call` hooks report metadata-only action phases and SDK outcome receipts by default using the existing runtime URL, tenant ID and API key. Native calls correlate through host tool-call IDs; execution is reported only when the host emits its completion event. No portal evidence token is required. Upgrade the owning control plane and assigned runtime alongside this plugin and its SDK dependency. Inspect `firewall.client.lifecycle.stats()` for delivery failures and await `firewall.client.lifecycle.flush()` before a short-lived host exits. Set `AGENTICDOME_EVIDENCE_ENABLED=false` to opt out. SDK reports do not claim destination attestation or reconstruct outcomes for historical calls.
+
 [![npm version](https://img.shields.io/npm/v/agenticdome-openclaw-security.svg)](https://www.npmjs.com/package/agenticdome-openclaw-security)
 [![CI](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/agenticdome/agenticdome-openclaw-security-ts/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)

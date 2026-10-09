@@ -95,13 +95,40 @@ try {
   const node = resolveNodeRuntime(runtime, openclawEnv);
   const cli = installOpenClawCli(runtime, node, openclawEnv);
 
-  run('npm', ['pack', '--pack-destination', tmp], { env: cli.nodeEnv });
-  const tarballs = fs.readdirSync(tmp).filter((name) => name.endsWith('.tgz'));
-  assert.equal(tarballs.length, 1, 'npm pack produced one tarball');
-  const spec = `npm-pack:${path.join(tmp, tarballs[0])}`;
+  const pluginManifest = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const pluginPack = JSON.parse(run('npm', ['pack', '--json', '--pack-destination', tmp], { env: cli.nodeEnv }))[0];
+  assert.equal(pluginPack.name, pluginManifest.name);
+  assert.equal(pluginPack.version, pluginManifest.version);
+  let spec = `npm-pack:${path.join(tmp, pluginPack.filename)}`;
+  let linkedCandidate = false;
+  const coreSource = process.env.AGENTICDOME_CORE_SDK_SOURCE || path.resolve(root, '../../../js/agentguard_sdk/src');
+  if (fs.existsSync(path.join(coreSource, 'package.json'))) {
+    const coreManifest = JSON.parse(fs.readFileSync(path.join(coreSource, 'package.json'), 'utf8'));
+    assert.equal(coreManifest.name, 'agenticdome-sdk');
+    const corePack = JSON.parse(run('npm', ['pack', '--json', '--pack-destination', tmp], { cwd: coreSource, env: cli.nodeEnv }))[0];
+    assert.equal(corePack.version, coreManifest.version);
+    const installRoot = path.join(tmp, 'candidate-install');
+    fs.mkdirSync(installRoot);
+    fs.writeFileSync(path.join(installRoot, 'package.json'), JSON.stringify({private: true, type: 'module'}));
+    run('npm', ['install', path.join(tmp, corePack.filename), path.join(tmp, pluginPack.filename), '--ignore-scripts', '--no-audit', '--no-fund'], {cwd: installRoot, env: cli.nodeEnv});
+    const installedCore = JSON.parse(fs.readFileSync(path.join(installRoot, 'node_modules/agenticdome-sdk/package.json'), 'utf8'));
+    assert.equal(installedCore.version, coreManifest.version);
+    spec = path.join(installRoot, 'node_modules/agenticdome-openclaw-security');
+    linkedCandidate = true;
+  }
 
   const installHelp = runOpenClaw(node, cli, ['plugins', 'install', '--help']);
-  const installArgs = ['plugins', 'install', spec, '--force'];
+  const installArgs = ['plugins', 'install', spec];
+  if (linkedCandidate) {
+    assert.ok(installHelp.includes('--link'), 'OpenClaw supports loading clean-installed local candidates');
+    installArgs.push('--link');
+    if (/--force\s+Confirm non-ClawHub sources/i.test(installHelp)) {
+      // New CLIs require source consent; older CLIs reject --force with --link.
+      installArgs.push('--force');
+    }
+  } else {
+    installArgs.push('--force');
+  }
   if (installHelp.includes('--accept-capabilities')) {
     // This exact local tarball is the release candidate under test. New OpenClaw
     // versions require explicit consent; older certified versions reject the flag.
@@ -119,8 +146,8 @@ try {
   const hooks = (inspect.typedHooks || []).map((item) => item.name).sort();
 
   assert.equal(inspect.plugin?.status, 'loaded');
-  assert.equal(inspect.plugin?.hookCount, 3);
-  assert.deepEqual(hooks, ['before_agent_run', 'before_tool_call', 'tool_result_persist']);
+  assert.equal(inspect.plugin?.hookCount, 4);
+  assert.deepEqual(hooks, ['after_tool_call', 'before_agent_run', 'before_tool_call', 'tool_result_persist']);
   assert.equal(inspect.policy?.allowConversationAccess, true);
 
   console.log(JSON.stringify({
@@ -132,6 +159,7 @@ try {
     selected_node_version: node.version,
     hook_count: inspect.plugin.hookCount,
     hooks,
+    install_mode: linkedCandidate ? 'clean_local_tarballs_linked' : 'registry_dependencies',
   }, null, 2));
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });

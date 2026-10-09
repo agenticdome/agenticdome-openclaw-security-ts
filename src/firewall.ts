@@ -964,9 +964,14 @@ export class OpenClawFirewall {
     this.requireSessionId(args.sessionId);
 
     const skillArgs = ensureDict('skillArgs', args.skillArgs);
-
+    const reporter = this.client.lifecycle;
+    const lifecycle = reporter.createContext({operationType:'tool_call',toolName:args.skillName,arguments:skillArgs,executorType:'tool',targetType:'tool'});
+    reporter.phase(lifecycle,'requested');
+    let attempted = false;
+    try {
+    let authorised = false;
     if (args.delegated) {
-      await this.verifySpecialistExecution({
+      const decision = await this.verifySpecialistExecution({
         specialistAgentId: args.agentId,
         skillName: args.skillName,
         skillArgs,
@@ -974,30 +979,40 @@ export class OpenClawFirewall {
         decisionToken: args.decisionToken,
         sourceAgentId: args.sourceAgentId
       });
+      authorised = decision.valid === true;
     } else {
-      await this.authorizeDirectSkill({
+      const decision = await this.authorizeDirectSkill({
         text: args.text,
         agentId: args.agentId,
         skillName: args.skillName,
         skillArgs,
         sessionId: args.sessionId,
         toolPlatform: args.toolPlatform,
-        policyContext: args.policyContext
+        policyContext: {...(args.policyContext||{}),chain_id:lifecycle.chainId,action_id:lifecycle.actionId,decision_id:lifecycle.actionId}
       });
+      authorised = ['ALLOWED','ALLOW','REDACTED'].includes(this.verdict(decision));
     }
 
+    if (authorised) reporter.phase(lifecycle,'authorised','allowed');
+    reporter.phase(lifecycle,'admitted');
+    attempted=true;reporter.phase(lifecycle,'attempted');
     const rawResult = await args.skillFunc(skillArgs);
 
     const resultText = safeResultToText(rawResult, {
       maxChars: this.config.outputSerializationMaxChars
     });
 
-    return this.sanitizeOutput({
+    const result = await this.sanitizeOutput({
       text: resultText,
       agentId: args.agentId,
       sessionId: args.sessionId,
       policyContext: args.policyContext
     });
+    reporter.outcome(lifecycle,'succeeded');return result;
+    } catch(error) {
+      if(!attempted)reporter.phase(lifecycle,'authorised','blocked');
+      reporter.outcome(lifecycle,attempted?'failed':'not_attempted');throw error;
+    }
   }
 
   close(): void {

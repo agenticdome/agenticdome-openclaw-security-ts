@@ -1,4 +1,5 @@
 import { OpenClawFirewall, safeResultToText } from './firewall';
+import type { VerifiedActionContext, VerifiedActionReporter } from 'agenticdome-sdk';
 
 type OpenClawEventHandler = (event: any, ctx?: any) => any | Promise<any>;
 
@@ -166,6 +167,12 @@ export default definePluginEntry({
 
   register(api) {
     let firewall: OpenClawFirewall | undefined;
+    const pendingTools = new Map<string, {context: VerifiedActionContext; createdAt: number}>();
+    const completedTools = new Set<string>();
+    const toolKey = (event: any, ctx: any): string | undefined => {
+      const id = event?.toolCallId || ctx.toolCallId;
+      return id ? JSON.stringify([ctx.agentId || '', ctx.sessionId || ctx.sessionKey || '', event?.runId || ctx.runId || '', id]) : undefined;
+    };
 
     const getFirewall = () => {
       firewall ??= new OpenClawFirewall();
@@ -199,13 +206,15 @@ export default definePluginEntry({
 
     // 2. Security execution gateway
     api.on('before_tool_call', async (event: any, hookCtx?: any) => {
+      let lifecycle: VerifiedActionContext | undefined;
+      let reporter: VerifiedActionReporter | undefined;
       try {
         const ctx = {
           ...shallowCloneObject(event?.ctx),
           ...shallowCloneObject(hookCtx),
         };
         const agentId = String(ctx.agentId || '');
-        const sessionId = String(ctx.sessionId || '');
+        const sessionId = String(ctx.sessionId || ctx.sessionKey || '');
         const toolName = String(event?.toolName || '').trim();
 
         const {
@@ -214,10 +223,32 @@ export default definePluginEntry({
           sourceAgentId,
         } = cleanInternalParams(event?.params || {});
 
+        const currentFirewall = getFirewall();
+        reporter = currentFirewall.client.lifecycle;
+        const key = toolKey(event, ctx);
+        if (reporter.enabled) {
+          lifecycle = reporter.createContext({operationType:'tool_call',toolName,arguments:workingParams,executorType:'tool',targetType:'tool'});
+          reporter.phase(lifecycle, 'requested');
+        }
+        const admitted = (approved: boolean) => {
+          if (!reporter || !lifecycle) return;
+          if (approved) reporter.phase(lifecycle, 'authorised', 'allowed');
+          reporter.phase(lifecycle, 'admitted');
+          if (key) {
+            const now = Date.now();
+            for (const [id, pending] of pendingTools) if (now-pending.createdAt > 900000) pendingTools.delete(id);
+            if (pendingTools.size >= 512) pendingTools.delete(pendingTools.keys().next().value!);
+            completedTools.delete(key);
+            pendingTools.set(key, {context:lifecycle,createdAt:now});
+          }
+        };
+        const approved = (decision: any) => ['ALLOW','ALLOWED','REDACTED'].includes(String(decision?.result?.verdict || decision?.verdict || '').toUpperCase());
+        const policyContext = lifecycle ? {chain_id:lifecycle.chainId,action_id:lifecycle.actionId,decision_id:lifecycle.actionId} : undefined;
+
         const contextSourceAgentId = sourceAgentId || ctx.sourceAgentId;
         // Case A: Specialist delegated execution verification
         if (contextSourceAgentId || decisionToken) {
-          await getFirewall().verifySpecialistExecution({
+          const decision = await currentFirewall.verifySpecialistExecution({
             specialistAgentId: agentId,
             skillName: toolName,
             skillArgs: workingParams,
@@ -227,6 +258,7 @@ export default definePluginEntry({
               ? String(contextSourceAgentId)
               : undefined,
           });
+          admitted(decision.valid === true);
 
           return {
             params: workingParams,
@@ -249,13 +281,14 @@ export default definePluginEntry({
             workingParams.target_tool_args || workingParams.skill_args || {};
           const targetArgs = shallowCloneObject(rawTargetArgs);
 
-          const authzEnvelope = await getFirewall().authorizeManagerHandoff({
+          const authzEnvelope = await currentFirewall.authorizeManagerHandoff({
             text: `Manager ${agentId} delegating to ${targetId}`,
             managerAgentId: agentId,
             specialistAgentId: String(targetId),
             skillName: String(targetTool),
             skillArgs: targetArgs,
             sessionId,
+            policyContext,
           });
 
           if (authzEnvelope.decision_token) {
@@ -275,29 +308,58 @@ export default definePluginEntry({
             }
           }
 
+          admitted(approved(authzEnvelope));
+
           return {
             params: workingParams,
           };
         }
 
         // Case C: Direct tool execution
-        await getFirewall().authorizeDirectSkill({
+        const decision = await currentFirewall.authorizeDirectSkill({
           text: `Direct execution of ${toolName}`,
           agentId,
           skillName: toolName,
           skillArgs: workingParams,
           sessionId,
+          policyContext,
         });
+        admitted(approved(decision));
 
         return {
           params: workingParams,
         };
       } catch (error: any) {
+        if (reporter && lifecycle) {
+          reporter.phase(lifecycle, 'authorised', 'blocked');
+          reporter.outcome(lifecycle, 'not_attempted');
+        }
         return {
           block: true,
           blockReason:
             error?.message || 'Execution denied by AgenticDome policy',
         };
+      }
+    });
+
+    // The host completion event proves that execution was attempted. A policy
+    // decision alone cannot emit an attempted phase or a successful receipt.
+    api.on('after_tool_call', (event: any, hookCtx?: any) => {
+      const reporter = getFirewall().client.lifecycle;
+      if (!reporter.enabled) return;
+      const ctx = {...shallowCloneObject(event?.ctx),...shallowCloneObject(hookCtx)};
+      const key = toolKey(event,ctx);
+      if (key && completedTools.has(key)) return;
+      const pending = key ? pendingTools.get(key) : undefined;
+      let lifecycle = pending?.context || reporter.createContext({operationType:'tool_call',toolName:String(event?.toolName || ''),executorType:'tool',targetType:'tool'});
+      lifecycle = reporter.withArguments(lifecycle, cleanInternalParams(event?.params || {}).params);
+      reporter.phase(lifecycle,'attempted');
+      const failed = event?.error != null || event?.result?.isError === true;
+      reporter.outcome(lifecycle,failed?'failed':Object.prototype.hasOwnProperty.call(event || {},'result')?'succeeded':'unknown');
+      if (key) {
+        pendingTools.delete(key);
+        if (completedTools.size >= 512) completedTools.delete(completedTools.values().next().value!);
+        completedTools.add(key);
       }
     });
 
