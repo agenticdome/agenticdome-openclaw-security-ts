@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { OpenClawFirewall, safeResultToText } from '../dist/firewall.mjs';
@@ -10,6 +10,18 @@ const config = {
   tenantId: 'tenant-1',
   requireExplicitSessionId: false,
 };
+
+const testFirewalls = new Set();
+function testFirewall() {
+  const firewall = new OpenClawFirewall(config);
+  firewall.client.request = async () => ({ durably_queued: true });
+  testFirewalls.add(firewall);
+  return firewall;
+}
+afterEach(async () => {
+  for (const firewall of testFirewalls) { await firewall.client.lifecycle.flush(); firewall.close(); }
+  testFirewalls.clear();
+});
 
 test('safeResultToText serializes structured output for DLP', () => {
   const text = safeResultToText(
@@ -26,7 +38,7 @@ test('safeResultToText serializes structured output for DLP', () => {
 });
 
 test('screenPrompt blocks blocked verdicts', async () => {
-  const firewall = new OpenClawFirewall(config);
+  const firewall = testFirewall();
   firewall.client.guardrailValidate = async () => ({ verdict: 'BLOCKED', reason: 'prompt injection' });
 
   await assert.rejects(
@@ -38,7 +50,7 @@ test('screenPrompt blocks blocked verdicts', async () => {
 });
 
 test('authorizeManagerHandoff stores and injects decision token for specialist verification', async () => {
-  const firewall = new OpenClawFirewall(config);
+  const firewall = testFirewall();
   firewall.client.a2aAuthorizeTool = async (payload) => {
     const identity = payload.policyContext.agenticdome_identity;
     assert.equal(identity.subject.id, 'alice');
@@ -75,7 +87,7 @@ test('authorizeManagerHandoff stores and injects decision token for specialist v
 });
 
 test('protectedExecute calls skillFunc with skillArgs and sanitizes result', async () => {
-  const firewall = new OpenClawFirewall(config);
+  const firewall = testFirewall();
   firewall.client.guardrailValidate = async () => ({ verdict: 'ALLOWED' });
   firewall.client.meshValidate = async (payload) => ({ result: { verdict: 'ALLOWED', sanitized_text: payload.text } });
 
@@ -110,7 +122,11 @@ test('plugin handlers handle malformed events through block responses', async ()
   const originalSanitizeOutput = PluginFirewall.prototype.sanitizeOutput;
 
   try {
-    PluginFirewall.prototype.screenPrompt = async () => ({});
+    PluginFirewall.prototype.screenPrompt = async function () {
+      this.client.request = async () => ({ durably_queued: true });
+      testFirewalls.add(this);
+      return {};
+    };
     PluginFirewall.prototype.authorizeDirectSkill = async () => ({});
     PluginFirewall.prototype.sanitizeOutput = async (args) => args.text;
 

@@ -501,6 +501,8 @@ export class OpenClawFirewall {
   }
 
   private failOrRaise(message: string, cause?: unknown): void {
+    // A policy pause is never a network failure or a fail-open exception.
+    if (cause instanceof Error && cause.name === 'ApprovalRequired') throw cause;
     if (this.config.failClosed) {
       const err = new OpenClawExecutionDenied(message);
       if (cause !== undefined) {
@@ -558,8 +560,15 @@ export class OpenClawFirewall {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        return await fn();
+        const response = await fn();
+        if (response && typeof response === 'object' && this.verdict(response as Dict) === 'APPROVAL_REQUIRED') {
+          const pause = new Error('Approval required. Upgrade the core SDK to resume this exact action.');
+          pause.name = 'ApprovalRequired';
+          throw pause;
+        }
+        return response;
       } catch (error) {
+        if (error instanceof Error && error.name === 'ApprovalRequired') throw error;
         const retryable = this.isRetryableException(error);
         const lastAttempt = attempt >= maxAttempts;
 
