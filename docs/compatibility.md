@@ -5,8 +5,8 @@ This file is maintained by the Admin SDK Harness certification workflow. The exa
 | Certified boundary | Node.js | OpenClaw CLI | Status |
 | --- | --- | --- | --- |
 | Certified floor | `>=24.16.0 <25 || >=26.1.0` | 2026.7.1-2 | Preserved compatibility floor |
-| Certified ceiling | `>=24.16.0 <25 || >=26.1.0` | 2026.10.2 | Current compatibility ceiling |
+| Certified ceiling | `>=24.16.0 <25 || >=26.1.0` | 2026.10.10 | Current compatibility ceiling |
 
-Certified support: `2026.7.1-2` through `2026.10.2`. Both endpoints must pass real CLI installation, exact typed-hook inspection, Node-engine validation, local firewall cases, package build and dependency checks before this range is extended.
+Certified support: `2026.7.1-2` through `2026.10.10`. Both endpoints must pass real CLI installation, exact typed-hook inspection, Node-engine validation, local firewall cases, package build and dependency checks before this range is extended.
 
 Required hooks: `after_tool_call`, `before_agent_run`, `before_tool_call`, `tool_result_persist`. The plugin must load with `policy.allowConversationAccess=true`.
